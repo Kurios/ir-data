@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+<script>
+
+// set the dimensions and margins of the graph
+var margin = {top: 10, right: 200, bottom: 30, left: 60},
+    width = 1800 - margin.left - margin.right,
+    height = 800 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+//Read the data
+d3.json("http://localhost:9898", function(data) {
+
+  // group the data: I want to draw one line per group
+  var sumstat = d3.nest() // nest function allows to group the calculation per level of a factor
+    .key(function(d) { return d.name;})
+    .entries(data);
+
+  // Add X axis --> it is a date format
+  var x = d3.scaleTime()
+    .domain(d3.extent(data, function(d) { return new Date(d.datetime ); }))
+    .range([ 0, width ]);
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x).ticks(5));
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([0, d3.max(data, function(d) { return +d.prosperity; })])
+    .range([ height, 0 ]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // color palette
+  var res = sumstat.map(function(d){ return d.key }) // list of group names
+  let colors = [];
+  for(let i = 0; i < 25; i++){
+      colors[i] = d3.interpolateRainbow(i / 25)
+  }
+  var color = d3.scaleOrdinal()
+    .domain(res)
+    .range(d3.schemeCategory20)
+
+  // Draw the line
+  let canvas = svg.selectAll(".line")
+      .data(sumstat)
+      .enter()
+      
+    canvas.append("path")
+        .attr("fill", "none")
+        .attr("stroke", function(d){ return color(d.key) })
+        .attr("stroke-width", 1.5)
+        .attr("d", function(d){
+          return d3.line()
+            .x(function(d) { return x(d.datetime); })
+            .y(function(d) { return y(d.prosperity); })
+            (d.values)
+        })
+    canvas.append("text")
+      .attr("font-weight", "bold")
+      .attr("fill", "none")
+      .attr("stroke", "white")
+      .attr("stroke-width", 3)
+      .attr("stroke-linejoin", "round")
+      .attr("x",function(d){ return x(d.values[d.values.length-1].datetime)})
+      .attr("y", function(d){ return y(d.values[d.values.length-1].prosperity)})
+      .attr("dx", 3)
+      .attr("dy", "0.35em")
+      .text( function(d){ return d.key})
+      .attr("fill", function(d){ return color(d.key)} )
+      .attr("stroke", null);
+
+      
+})
+
+</script>
