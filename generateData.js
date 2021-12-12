@@ -15,12 +15,23 @@ const db = (async () => {
     let server = http.createServer(async (req,res)=>{
         res.writeHead(200, {'Content-Type':"text/json", 'Access-Control-Allow-Origin':'*'})
         //res.write("name prosperity timestamp")
-
-        const result = await db.all('SELECT unions.name, prosperity, datetime FROM prosperity INNER JOIN unions ON unions.id = prosperity.unionid')
-        for (let item of result) {
-            item.datetime = Math.round(new Date(item.datetime).getTime())
+        let result;
+        switch (req.url) {
+            case "/prosperity":
+                result = await db.all('SELECT unions.name, prosperity, datetime FROM prosperity INNER JOIN unions ON unions.id = prosperity.unionid')
+                for (let item of result) {
+                    item.datetime = Math.round(new Date(item.datetime).getTime())
+                }
+                res.write(JSON.stringify(result))
+                break;
+            case "/rank":
+                result = await db.all('SELECT  ROW_NUMBER () OVER ( ORDER BY prosperity.prosperity DESC) "rank", unions.id, prosperity.prosperity, unions.name, prosperity.datetime FROM prosperity INNER JOIN unions  ON unions.id = prosperity.unionid  WHERE prosperity.datetime IN (SELECT prosperity.datetime FROM prosperity ORDER BY prosperity.datetime DESC limit 1) ORDER BY prosperity.prosperity DESC')
+                for (let item of result) {
+                    item.datetime = Math.round(new Date(item.datetime).getTime())
+                }
+                res.write(JSON.stringify(result))
+                break;
         }
-        res.write(JSON.stringify(result))
         res.end()
     })
     
