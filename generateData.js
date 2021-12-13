@@ -18,7 +18,10 @@ const db = (async () => {
         let result;
         switch (req.url) {
             case "/prosperity":
-                result = await db.all('SELECT unions.name, prosperity, datetime FROM prosperity INNER JOIN unions ON unions.id = prosperity.unionid')
+                result = await db.all(`SELECT unions.name, prosperity.prosperity, prosperity.datetime FROM prosperity `+
+                `INNER JOIN unions ON unions.id = prosperity.unionid `+
+               `INNER JOIN players ON players.unionid = prosperity.unionid and players.datetime = prosperity.datetime `+
+                `WHERE (prosperity.prosperity > ( players.playercount * 26))`)
                 for (let item of result) {
                     item.datetime = Math.round(new Date(item.datetime).getTime())
                 }
