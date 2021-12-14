@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3'
 import { open } from 'sqlite'
 import http from 'http'
+import fs from 'fs'
 
 
 const db = (async () => {
@@ -25,7 +26,7 @@ const db = (async () => {
             switch (req.url) {
                 case "/":
                     res.writeHead(200, { 'Content-Type': "text/html", 'Access-Control-Allow-Origin': '*' })
-                    var data = require("fs").readFileSync("index.html", "utf8");
+                    var data = fs.readFileSync("index.html", "utf8");
                     res.write(data)
                     break;
                 case "/prosperity":
