@@ -51,6 +51,15 @@ const db = (async () => {
                     }
                     res.write(JSON.stringify(result))
                     break;
+                case "/score":
+                    result = await db.all(`SELECT unions.name, score.score,score.datetime FROM score ` +
+                    `INNER JOIN unions ON unions.id = score.unionid ` +
+                    `WHERE (score.score > 0)`)
+                    for (let item of result) {
+                        item.datetime = Math.round(new Date(item.datetime).getTime())
+                    }
+                    res.write(JSON.stringify(result))
+                    break;
                 case "/write":
                     if (req.method == "POST") {
                         var body = "";
@@ -74,12 +83,14 @@ const db = (async () => {
                                     let playercount = item[3]
                                     let cities = item[8]
                                     let prosperity = item[11]
+                                    let score = item[18] //raiting points
                                     if (!Number.isInteger(item)) {
                                         console.log(`${i} ${unionName} ${unionId} ${playercount}/100 ${prosperity}`)
                                         await db.run("INSERT INTO unions (id, name) VALUES( " + unionId + " , '" + unionName + "') ON CONFLICT(id) DO UPDATE SET name=excluded.name;")
                                         await db.run(`INSERT INTO players (unionid, playercount, datetime) VALUES (${unionId}, ${playercount}, datetime('${time}'))`)
                                         await db.run(`INSERT INTO prosperity (unionid, prosperity, datetime) VALUES (${unionId}, ${prosperity}, datetime('${time}'))`)
                                         await db.run(`INSERT INTO cities (unionid, citycount, datetime) VALUES (${unionId}, ${cities}, datetime('${time}'))`)
+                                        await db.run(`INSERT INTO score (unionid, score, datetime) VALUES (${unionId}, ${score}, datetime('${time}'))`)
                                     }
                                     i++
                                 }
