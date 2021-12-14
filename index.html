@@ -76,7 +76,7 @@
             .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
         //Read the data
-        d3.json("http://localhost:9898/prosperity").then((data) => {
+        d3.json("/prosperity").then((data) => {
 
             // group the data: I want to draw one line per group
             var sumstat = d3.group(data, data => data.name)
@@ -264,7 +264,7 @@
 })
 
 
-        d3.json("http://localhost:9898/rank").then((data) => {
+        d3.json("/rank").then((data) => {
             let data2 = [{ name: `Family`, prosperity: 0 }, { name: `Allies`, prosperity: 0 }, { name: `NAP`, prosperity: 0 }, { name: `Neutrals`, prosperity: 0 }, { name: "Enemies", prosperity: 0 }]
             let total = 0;
             for (let d of data) {
