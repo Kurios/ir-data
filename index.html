@@ -391,6 +391,7 @@
                 .attr("x", function (d) { return cityX(d[1][0].name)+10; })
                 .attr("y", function (d) { return cityY(.1); })
                 .attr("height", function (d) { return height - cityY(d[1][0].citycount); })
+                .text(function (d) { return (d[1][0].name); })
                 .attr("font-size", "36")
                 .attr("fill", "#222")
         })
