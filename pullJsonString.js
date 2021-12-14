@@ -44,12 +44,14 @@ const tail = new TailFile('C:\\Users\\jmorg\\AppData\\Local\\lagrange_global_onl
             let unionName = item[1]
             let unionId = item[0]
             let playercount = item[3]
+            let cities = item[8]
             let prosperity = item[11]
             if (!Number.isInteger(item)) {
               console.log(`${i} ${unionName} ${unionId} ${playercount}/100 ${prosperity}`)
               await db.run("INSERT INTO unions (id, name) VALUES( " + unionId + " , '" + unionName + "') ON CONFLICT(id) DO UPDATE SET name=excluded.name;")
               await db.run(`INSERT INTO players (unionid, playercount, datetime) VALUES (${unionId}, ${playercount}, datetime('${time}'))`)
               await db.run(`INSERT INTO prosperity (unionid, prosperity, datetime) VALUES (${unionId}, ${prosperity}, datetime('${time}'))`)
+              await db.run(`INSERT INTO cities (unionid, citycount, datetime) VALUES (${unionId}, ${cities}, datetime('${time}'))`)
             }
             i++
           }

@@ -18,9 +18,11 @@ const db = (async () => {
         let result;
         switch (req.url) {
             case "/prosperity":
-                result = await db.all(`SELECT unions.name, prosperity.prosperity, prosperity.datetime FROM prosperity `+
+                result = await db.all(
+                `SELECT unions.name, cities.citycount, players.playercount, prosperity.prosperity, prosperity.datetime FROM prosperity `+
                 `INNER JOIN unions ON unions.id = prosperity.unionid `+
                `INNER JOIN players ON players.unionid = prosperity.unionid and players.datetime = prosperity.datetime `+
+               `LEFT JOIN cities ON cities.unionid = prosperity.unionid and cities.datetime = prosperity.datetime ` +
                 `WHERE (prosperity.prosperity > ( players.playercount * 26))`)
                 for (let item of result) {
                     item.datetime = Math.round(new Date(item.datetime).getTime())
@@ -28,7 +30,10 @@ const db = (async () => {
                 res.write(JSON.stringify(result))
                 break;
             case "/rank":
-                result = await db.all('SELECT  ROW_NUMBER () OVER ( ORDER BY prosperity.prosperity DESC) "rank", unions.id, prosperity.prosperity, unions.name, prosperity.datetime FROM prosperity INNER JOIN unions  ON unions.id = prosperity.unionid  WHERE prosperity.datetime IN (SELECT prosperity.datetime FROM prosperity ORDER BY prosperity.datetime DESC limit 1) ORDER BY prosperity.prosperity DESC')
+                result = await db.all('SELECT  ROW_NUMBER () OVER ( ORDER BY prosperity.prosperity DESC) "rank", unions.id, prosperity.prosperity, unions.name, cities.citycount, prosperity.datetime FROM prosperity '+
+                'INNER JOIN unions  ON unions.id = prosperity.unionid  ' +
+                'INNER JOIN cities  ON unions.id = cities.unionid  ' +
+                'WHERE prosperity.datetime IN (SELECT prosperity.datetime FROM prosperity ORDER BY prosperity.datetime DESC limit 1) ORDER BY prosperity.prosperity DESC')
                 for (let item of result) {
                     item.datetime = Math.round(new Date(item.datetime).getTime())
                 }
