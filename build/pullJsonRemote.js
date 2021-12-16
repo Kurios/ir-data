@@ -21,7 +21,8 @@ const tail = new tail_file_1.default(process.env.localappdata + '/lagrange_globa
         if ((new Date().getTime() - lastRead) > 300000) {
             console.log("transfering");
             lastRead = new Date().getTime();
-            const options = { hostname: "notthedomainyourlookingfor.com", port: 80, path: "/write", method: "POST" };
+            //const options = { hostname:"notthedomainyourlookingfor.com", port:80, path: "/write", method: "POST"}
+            const options = { hostname: "localhost", port: 9898, path: "/write", method: "POST" };
             const request = http_1.default.request(options, (response) => { });
             request.write(JSON.stringify(payload));
             request.end();

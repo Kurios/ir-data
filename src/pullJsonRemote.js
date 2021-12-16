@@ -22,6 +22,7 @@ const tail = new TailFile(process.env.localappdata +'/lagrange_global_online_bra
         console.log("transfering");
         lastRead = new Date().getTime();
         const options = { hostname:"notthedomainyourlookingfor.com", port:80, path: "/write", method: "POST"}
+        //const options = { hostname:"localhost", port:9898, path: "/write", method: "POST"}
         const request = http.request(options, (response) => {});
         request.write(JSON.stringify(payload));
         request.end();

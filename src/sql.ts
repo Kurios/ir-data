@@ -1,12 +1,12 @@
 import Sqlite3 = require('better-sqlite3')
 import {Database, Statement} from 'better-sqlite3'
 import { readlink } from 'fs';
+import { Console } from 'console';
 
 export class Sql {
     db: Database
     diploSql: Statement
     rankSql: Statement
-    scoreSql:Statement
     unionListSql:Statement
     unionInsertSql:Statement
     unionDiplomacyInsertSql:Statement
@@ -24,18 +24,13 @@ export class Sql {
 
             
         //prepare prepared statements
-        this.diploSql = this.db.prepare(`SELECT unions.name, cities.citycount, players.playercount, prosperity.prosperity, prosperity.datetime FROM prosperity ` +
-            `INNER JOIN unions ON unions.id = prosperity.unionid ` +
-            `INNER JOIN players ON players.unionid = prosperity.unionid and players.datetime = prosperity.datetime ` +
-            `LEFT JOIN cities ON cities.unionid = prosperity.unionid and cities.datetime = prosperity.datetime ` +
-            `WHERE (prosperity.prosperity > ( players.playercount * 26))`)
-        this.rankSql = this.db.prepare('SELECT  ROW_NUMBER () OVER ( ORDER BY prosperity.prosperity DESC) "rank", unions.id, prosperity.prosperity, unions.name, cities.citycount, prosperity.datetime FROM prosperity ' +
-            'INNER JOIN unions  ON unions.id = prosperity.unionid  ' +
-            'INNER JOIN cities  ON unions.id = cities.unionid  ' +
-            'WHERE prosperity.datetime IN (SELECT prosperity.datetime FROM prosperity ORDER BY prosperity.datetime DESC limit 1) ORDER BY prosperity.prosperity DESC')
-        this.scoreSql = this.db.prepare(`SELECT unions.name, score.score,score.datetime FROM score ` +
-            `INNER JOIN unions ON unions.id = score.unionid ` +
-            `WHERE (score.score > 0)`)
+        this.diploSql = this.db.prepare(`SELECT * FROM unionRank ` +
+            `WHERE (prosperity > ( players * 26))`)
+
+        this.rankSql = this.db.prepare('SELECT  ROW_NUMBER () OVER (ORDER BY unionRank.prosperity DESC ) "rank", unionList.id, unionRank.prosperity, unionList.name, unionRank.cityCount, datetime FROM unionRank ' +
+            'INNER JOIN unionList  ON unionRank.unionid = unionList.id  ' +
+            'WHERE unionRank.datetime IN (SELECT unionRank.datetime FROM unionRank ORDER BY unionRank.datetime DESC limit 1) ORDER BY unionRank.prosperity DESC')
+
 
         this.unionListSql = this.db.prepare(`SELECT id, name, leader, leaderId, announcement FROM unionList `)
             
@@ -92,6 +87,7 @@ export class Sql {
                 }
             }
         }
+        console.log(ret)
         this.writeDiploData(ret);
     }
 
@@ -102,7 +98,7 @@ export class Sql {
         if(typeof data[15] == "string"  && Array.isArray(data[16]) && Number.isInteger(data[17]) && Number.isInteger(data[18]) && Number.isInteger(data[19]))
         {
             let ret:UnionDataElement = {
-                unionId: data[0] as number,
+                unionid: data[0] as number,
                 unionName: data[1] as string,
                 element2: data[2] as number,
                 players: data[3] as number,
@@ -125,6 +121,7 @@ export class Sql {
             }
         return ret;
         }
+        console.log("Validation Failed: "+ data)
         return null;
     }
 
@@ -133,17 +130,17 @@ export class Sql {
         let time = `${date.toISOString().slice(0, 10)} ${date.toISOString().slice(11, 19)}`
         this.db.transaction((data:RawDiploData)=>{
             for(let item of data){
-                this.unionInsertSql.run({id:item.unionId, name:item.unionName, leader:item.unionLeader, leaderId: item.unionLeaderId, announcement: item.unionAnnouncement })
-                this.unionDiplomacyInsertSql.run({unionId:item.unionId, element2:item.element2, players:item.players, maxplayers:item.maxplayers, element5:item.element5, element6:item.element6,element7:item.element7,cityCount:item.cityCount,prosperity:item.prosperity,
-                    startingRegion:item.startingRegion,element13:item.element13,element16:item.element16,element17:item.element17,score:item.score,element19:item.element19,time})
+                this.unionInsertSql.run({id:item.unionid, name:item.unionName, leader:item.unionLeader, leaderId: item.unionLeaderId, announcement: item.unionAnnouncement })
+                this.unionDiplomacyInsertSql.run({unionid:item.unionid, element2:item.element2, players:item.players, maxplayers:item.maxplayers, element5:item.element5, element6:item.element6,element7:item.element7,cityCount:item.cityCount,prosperity:item.prosperity,
+                    startingRegion:item.startingRegion,element13:item.element13,element16:item.element16,element17:item.element17,score:item.score,element19:item.element19,datetime:time})
             }
-        })
+        })(data)
     }
     
 }
 
 type DiploData  = {
-    unionId:number
+    unionid:number
     players:number
     cityCount:Number
     prosperity:number
@@ -153,7 +150,7 @@ type DiploData  = {
 }
 
 type RankData  = {
-    unionId:number
+    unionid:number
     element2:number
     players:number
     maxplayers:number
@@ -180,7 +177,7 @@ type UnionData = {
 }
 
 type UnionDataElement = {
-    unionId:number
+    unionid:number
     unionName:string
     element2:number
     players:number
