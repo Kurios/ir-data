@@ -1,5 +1,7 @@
 node_modules
 node_modules/*
+build
+build/*
 database.db
 logs.txt
 database.db.backup

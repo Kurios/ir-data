@@ -1,3 +1,8 @@
+//////////////////////////////
+//// THIS FILE IS RETIRED ////
+//////////////////////////////
+
+
 import sqlite3 from 'sqlite3'
 import { open } from 'sqlite'
 //This is dangerous and getting retired for something not in the npm start script...
