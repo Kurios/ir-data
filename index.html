@@ -19,6 +19,12 @@
         .domain {
             stroke: #eee !important;
         }
+        g.grid .tick line {
+            stroke: #444 !important;
+        }
+        .grid path {
+            stroke-width: 0;
+        }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
@@ -34,6 +40,9 @@
     <div id="my_dataviz2"></div>
     <br />
     <div id="my_datavizcity"></div>
+    <div id="my_datavizcitychart"></div>
+    <br />
+    <div id="my_datavizscore"></div>
     <br />
     <div id="my_dataviz3"></div>
     <script>
@@ -71,6 +80,23 @@
             .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
 
+        var svgcc = d3.select("#my_datavizcitychart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        var svgscore = d3.select("#my_datavizscore")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+
         var svg3 = d3.select("#my_dataviz3")
             .append("svg")
             .attr("width", width)
@@ -84,7 +110,7 @@
             d3.json("/prosperity").then((data) => {
 
                 // group the data: I want to draw one line per group
-                var sumstat = d3.group(data, data => data.unionid)
+                var sumstat = d3.group(data.filter((x)=>x.prosperity > 20000), data => data.unionid)
 
 
                 // Add a new dataset... deltas
@@ -92,10 +118,14 @@
                     for (let i = 0; i < item[1].length; i++) {
                         if (i == 0) {
                             item[1][0].delta = 0;
-                        } else {
-                            item[1][i].delta = item[1][i].prosperity - item[1][i - 1].prosperity
+                        } else if(
+                            i == 1
+                        ){
+                            item[1][1].delta = 0;
+                        } else{
+                            item[1][i].delta = (item[1][i].prosperity - item[1][i - 2].prosperity) / (item[1][i].datetime -  item[1][i - 2].datetime) * 1000 * 60 * 60
                         }
-                        item.textY = item[1][item[1].length - 1].prosperity
+                        item.textY = item[1][item[1].length - 2].prosperity
                     }
                 }
                 // Add X axis --> it is a date format
@@ -105,27 +135,79 @@
 
                 svg.append("g")
                     .attr("transform", "translate(0," + height + ")")
-                    .call(d3.axisBottom(x).ticks(5));
+                    .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)).tickSize(-height,0,0).tickFormat(""))
+                    
 
 
                 svg2.append("g")
                     .attr("transform", "translate(0," + height + ")")
-                    .call(d3.axisBottom(x).ticks(5));
+                    .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)).tickSize(-height,0,0).tickFormat(""))
+
+                svgcc.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)).tickSize(-height,0,0).tickFormat(""))
+
+                svgscore.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisBottom(x).ticks(d3.timeDay.every(1)).tickSize(-height,0,0).tickFormat(""))
 
                 // Add Y axis
                 var y = d3.scaleLinear()
-                    .domain([0, d3.max(data, function (d) { return +d.prosperity; })])
-                    .range([height, 0]);
-
-                var y2 = d3.scaleLinear()
+                    .domain([20000, d3.max(data, function (d) { return +d.prosperity; })])
+                    .range([height, 0])
+                
+                var y2 = d3.scaleSymlog()
                     .domain([d3.min(data, function (d) { return +d.delta; }), d3.max(data, function (d) { return +d.delta; })])
+                    //.domain([-1000,2000])
+                    .range([height, 0])
+                    .constant(100)
+
+                var ycc = d3.scaleLinear()
+                    .domain([d3.min(data, function (d) { return +d.cityCount; }), d3.max(data, function (d) { return +d.cityCount; })])
+                    .range([height, 0])
+                    
+                
+                var yscore = d3.scaleLinear()
+                    .domain([d3.min(data, function (d) { return +d.score; }), d3.max(data, function (d) { return +d.score; })])
                     .range([height, 0]);
 
                 svg.append("g")
-                    .call(d3.axisLeft(y));
+                    .call(d3.axisLeft(y))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisLeft(y).tickSize(-width,0,0).tickFormat(""))
 
                 svg2.append("g")
-                    .call(d3.axisLeft(y2));
+                    .call(d3.axisLeft(y2))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisLeft(y2).tickSize(-width,0,0).tickFormat(""))
+
+                svgcc.append("g")
+                    .call(d3.axisLeft(ycc))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisLeft(ycc).tickSize(-width,0,0).tickFormat(""))
+                
+
+                svgscore.append("g")
+                    .call(d3.axisLeft(yscore))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisLeft(yscore).tickSize(-width,0,0).tickFormat(""))
+
 
                 // color palette
 
@@ -186,7 +268,7 @@
                         }
                     })
                 function updateProspChart(bottom) {
-                    let drawdata = d3.filter(sumstat, (d) => { console.log(d); return d[1][d[1].length - 1].prosperity > bottom })
+                    let drawdata = d3.filter(sumstat, (d) => { return d[1][d[1].length - 1].prosperity > bottom })
                 }
 
                 svg.append("text")
@@ -225,7 +307,7 @@
                     .attr("d", function (d) {
                         return d3.line()
                             .x(function (d) { return x(d.datetime); })
-                            .y(function (d) { return y2(d.delta); })
+                            .y(function (d) { return y2(d.delta) })
                             (d[1])
                     })
                 canvas2.append("text")
@@ -239,7 +321,7 @@
                     .attr("y", function (d) { return y2(d[1][d[1].length - 1].delta) })
                     .attr("dx", 3)
                     .attr("dy", "0.35em")
-                    .text(function (d) { return d[0] })
+                    .text(function (d) {  return unionNames.get(d[0])[0].name })
                     .attr("fill", function (d) { return color(d) })
                     .attr("stroke", null);
 
@@ -268,9 +350,132 @@
                     .attr("stroke", "none")
                     .attr("stroke-width", 0)
                     //.attr("stroke-linejoin", "round")
-                    .text("Prosperity Delta (12 hour)")
+                    .text("Prosperity Delta (1 hour)")
                     .attr("font-size", "36")
                     .attr("x", function (d) { return (width - 200) / 2 })
+                    .attr("y", function (d) { return 20 })
+
+
+                // Draw the line (Cities)
+                let prospLinesCity = {};
+                let citydat = d3.group(data.filter((x)=>x.cityCount > 0), data => data.unionid)
+                let canvascc = svgcc.selectAll(".line")
+                    .data(citydat)
+                    .enter()
+                canvascc.append("path")
+                    .attr("fill", "none")
+                    .attr("stroke", function (d) { return color(d) })
+                    .attr("stroke-width", 1.5)
+                    .attr("d", function (d) {
+                        return d3.line()
+                            .x(function (d) { return x(d.datetime); })
+                            .y(function (d) { return ycc(d.cityCount); })
+                            (d[1])
+                    })
+
+                canvascc.append("text")
+                    .attr("font-weight", "bold")
+                    .attr("class", "label")
+                    .attr("fill", "none")
+                    .attr("stroke", "white")
+                    .attr("stroke-width", 3)
+                    .attr("stroke-linejoin", "round")
+                    .attr("x", function (d) { return x(d[1][d[1].length - 1].datetime) })
+                    .attr("y", function (d) { return ycc(d[1][d[1].length - 1].cityCount) })
+                    .attr("dx", 3)
+                    .attr("dy", "0.35em")
+                    .text(function (d) { return unionNames.get(d[0])[0].name })
+                    .attr("fill", function (d) { return color(d) })
+                    .attr("stroke", null);
+
+                let nodescc = svgcc.selectAll(".label").nodes()
+                let svgnodescc = [];
+                for (let j of nodes1) {
+                    svgnodescc.push({ root: j, x: j.x.baseVal[0].value, y: Number(j.y.baseVal[0].value), y0: Number(j.y.baseVal[0].value) })
+                }
+
+                let forcesimcc = d3.forceSimulation(svgnodescc)
+                    .force('collision', d3.forceCollide().strength(.05).radius(() => { return 8 }))
+                    .force('y', d3.forceY().y((d) => { return d.y0 }))
+                    .on('tick', () => {
+                        for (let node of svgnodescc) {
+                            node.root.setAttribute("x", node.x);
+                            node.root.setAttribute("y", node.y);
+                        }
+                    })
+
+                svgcc.append("text")
+                    .attr("font-weight", "bold")
+                    .attr("class", "label")
+                    .attr("fill", "white")
+                    //.attr("stroke", "white")
+                    .attr("stroke-width", 3)
+                    .attr("stroke-linejoin", "round")
+                    .text("City Count")
+                    .attr("font-size", "36")
+                    .attr("x", function (d) { return width / 2 })
+                    .attr("y", function (d) { return 20 })
+                updateProspChart(0);
+
+
+                // Draw the line (Score)
+                let prospLinesScore = {};
+                let scoredat = d3.group(data.filter((x)=>x.score > 0), data => data.unionid)
+                let canvasscore = svgscore.selectAll(".line")
+                    .data(scoredat)
+                    .enter()
+                canvasscore.append("path")
+                    .attr("fill", "none")
+                    .attr("stroke", function (d) { return color(d) })
+                    .attr("stroke-width", 1.5)
+                    .attr("d", function (d) {
+                        return d3.line()
+                            .x(function (d) { return x(d.datetime); })
+                            .y(function (d) { return yscore(d.score); })
+                            (d[1])
+                    })
+
+                canvasscore.append("text")
+                    .attr("font-weight", "bold")
+                    .attr("class", "label")
+                    .attr("fill", "none")
+                    .attr("stroke", "white")
+                    .attr("stroke-width", 3)
+                    .attr("stroke-linejoin", "round")
+                    .attr("x", function (d) { return x(d[1][d[1].length - 1].datetime) })
+                    .attr("y", function (d) { return yscore(d[1][d[1].length - 1].score) })
+                    .attr("dx", 3)
+                    .attr("dy", "0.35em")
+                    .text(function (d) { return unionNames.get(d[0])[0].name })
+                    .attr("fill", function (d) { return color(d) })
+                    .attr("stroke", null);
+
+                let nodesscore = svgscore.selectAll(".label").nodes()
+                let svgnodesscore = [];
+                for (let j of nodesscore) {
+                    svgnodesscore.push({ root: j, x: j.x.baseVal[0].value, y: Number(j.y.baseVal[0].value), y0: Number(j.y.baseVal[0].value) })
+                }
+
+                let forcesimscore = d3.forceSimulation(svgnodesscore)
+                    .force('collision', d3.forceCollide().strength(.05).radius(() => { return 8 }))
+                    .force('y', d3.forceY().y((d) => { return d.y0 }))
+                    .on('tick', () => {
+                        for (let node of svgnodes1) {
+                            node.root.setAttribute("x", node.x);
+                            node.root.setAttribute("y", node.y);
+                        }
+                    })
+
+                svgscore.append("text")
+                    .attr("font-weight", "bold")
+                    .attr("class", "label")
+                    .attr("fill", "white")
+                    //.attr("stroke", "white")
+                    .attr("stroke-width", 3)
+                    .attr("stroke-linejoin", "round")
+                    .text("Score")
+                    .attr("font-size", "36")
+                    .attr("x", function (d) { return width / 2 })
                     .attr("y", function (d) { return 20 })
             })
 
@@ -280,23 +485,27 @@
                 let total = 0;
                 for (let d of data) {
                     total += d.prosperity;
-                    switch (d.unionid) {
-                        //fam
+                    switch (d.id) {
+                        //fam and Allied
                         case 100058: //evo
                         case 100062: //Void
-                        case 100041: //Canino
-                        case 100063: //Tengu
-                            data2[0].prosperity += d.prosperity; break;
+                        case 100063: //Zombie Nation
+                           // data2[0].prosperity += d.prosperity; break;
                         //allied
                         case 100043: //angels of wraith
                         case 100046: //Magnus
                             data2[1].prosperity += d.prosperity; break;
                         //NAP
                         case 100177: //Jedi
-                        case 100006: //FlamingChickens
                         case 100047: //CC
                             data2[2].prosperity += d.prosperity; break;
                             //Enemy
+                        case 100006: //FlamingChickens
+                        case 100010: //战争帝国
+                        case 100001: //Pathfinder
+                        case 100026: //Wayfinder
+                        case 100019: //Llamafield
+                        case 100029: //Triton
                             data2[4].prosperity += d.prosperity; break;
                         //Everyone Else
                         default: data2[3].prosperity += d.prosperity; break;
@@ -356,7 +565,8 @@
                     .style("fill", "#eee")
                     .style("stroke", "#333")
                     .style("font-family", "Licodoa Console")
-                var dat = d3.group(data.filter(d => d.citycount > 0), data => data.name)
+
+                var dat = d3.group(data.filter(d => d.cityCount > 0).sort((a,b)=>{return a.cityCount > b.cityCount}), data => data.name)
                 var cityX = d3.scaleBand()
                     .range([0, width])
                     .domain(dat.keys())
@@ -365,15 +575,19 @@
                     .attr("transform", "translate(0," + height + ")")
                     .call(d3.axisBottom(cityX))
                     .selectAll("text")
-                    .attr("transform", "translate(-10,0)rotate(-45)")
-                    .style("text-anchor", "end");
+                    //.attr("transform", "translate(-10,0)rotate(-45)")
+                    //.style("text-anchor", "end");
 
                 // Add Y axis
                 var cityY = d3.scaleLinear()
-                    .domain([0, d3.max(dat, (d) => { return d[1][0].citycount })])
-                    .range([height, 0]);
+                    .domain([0, d3.max(dat, (d) => { return d[1][0].cityCount })])
+                    .range([height, 0])
+                    
                 svgcity.append("g")
-                    .call(d3.axisLeft(cityY));
+                    .call(d3.axisLeft(cityY))
+                    .append("g")
+                    .attr("class","grid")
+                    .call(d3.axisLeft(cityY).tickSize(-width,0,0).tickFormat(""))
 
                 // Bars
                 let colors2 = [];
@@ -390,21 +604,23 @@
                     .enter()
                     .append("rect")
                     .attr("x", function (d) { return cityX(d[1][0].name); })
-                    .attr("y", function (d) { return cityY(d[1][0].citycount); })
+                    .attr("y", function (d) { return cityY(d[1][0].cityCount); })
                     .attr("width", cityX.bandwidth())
-                    .attr("height", function (d) { return height - cityY(d[1][0].citycount); })
+                    .attr("height", function (d) { return height - cityY(d[1][0].cityCount); })
                     .attr("fill", function (d) { return color2(d) })
 
                 svgcity.selectAll("mybar")
                     .data(dat)
                     .enter()
                     .append("text")
-                    .attr("x", function (d) { return cityX(d[1][0].name) + 10; })
-                    .attr("y", function (d) { return cityY(.1); })
-                    .attr("height", function (d) { return height - cityY(d[1][0].citycount); })
+                    .attr("x", function (d) { return cityX(d[1][0].name) + cityX.bandwidth()/2; })
+                    .attr("y", function (d) { return  (height - cityY(d[1][0].cityCount)/2) })
+                    .attr("height", function (d) { return height - cityY(d[1][0].cityCount); })
                     .text(function (d) { return (d[1][0].name); })
-                    .attr("font-size", "36")
+                    .attr("font-size", "12")
                     .attr("fill", "#222")
+                    .style("text-anchor", "middle")
+                    .attr("transform", "rotate(-90)")
             })
         })
     </script>
