@@ -8,6 +8,7 @@ install node.js (16 or greater)
 Pull this down from git
 #### Step 3:
 ```npm install```
+```npm run build```
 ```npm start```
 ### Step 4:
 Navigate to the union list in-game! It will automatically send it to [http://notthedomainyourlookingfor.com/]()
