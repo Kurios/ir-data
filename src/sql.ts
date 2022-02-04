@@ -31,6 +31,7 @@ export class Sql {
             'INNER JOIN unionList  ON unionRank.unionid = unionList.id  ' +
             'WHERE unionRank.datetime IN (SELECT unionRank.datetime FROM unionRank ORDER BY unionRank.datetime DESC limit 1) ORDER BY unionRank.prosperity DESC')
 
+        
 
         this.unionListSql = this.db.prepare(`SELECT id, name, leader, leaderId, announcement FROM unionList `)
             

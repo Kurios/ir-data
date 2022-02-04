@@ -11,9 +11,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@discordjs/rest": "^0.3.0",
     "@logdna/tail-file": "^2.1.0",
     "@types/better-sqlite3": "^7.4.1",
     "better-sqlite3": "^7.4.5",
+    "discord-api-types": "^0.26.1",
+    "discord.js": "^13.6.0",
+    "split2": "^4.1.0",
     "sqlite": "^4.0.23",
     "sqlite3": "^4.2.0",
     "tslib": "^2.3.1"
