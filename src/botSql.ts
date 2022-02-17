@@ -85,7 +85,7 @@ export class BotSql {
     }
 }
 
-type PlayerData = {
+export type PlayerData = {
     playerId: number;
     unionId: number;
     playerName: string;

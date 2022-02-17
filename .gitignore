@@ -7,3 +7,5 @@ logs.txt
 database.db.backup
 app_secret
 bot-database.db
+bot-database.backup.db
+gcpkey.json
