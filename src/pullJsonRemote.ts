@@ -173,10 +173,10 @@ client.on("guildMemberAdd", (member) => {
       }
       
       //Cant find an existing member, attempt to auth.
-      if(member.guild && !(member.guild.id == "943260995072163880")){
+      //if(member.guild && !(member.guild.id == "943260995072163880")){
         let trigger = roleManagement.createNewTrigger(member.id, member.guild.id);
         member.guild.systemChannel?.send(`Welcome <@${member.id}>, may the Potato be with you! \nPlease say \`${trigger.phrase}\` in In-Game Star System Chat to verify.`)
-      }
+      //}
     } catch (e) {
       console.log(e)
     }
