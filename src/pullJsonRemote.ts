@@ -58,9 +58,9 @@ const rest = new REST({ version: '9' }).setToken(token);
       { body: commands },
     );
 
-    await rest.put(
-      Routes.applicationGuildCommands(clientId, EvoGuildID), { body: potatoCommands }
-    );
+    //await rest.put(
+    //  Routes.applicationGuildCommands(clientId, EvoGuildID), { body: potatoCommands }
+    //);
 
     console.log('Successfully reloaded application (/) commands.');
   } catch (error) {
@@ -80,6 +80,7 @@ client.on('ready', async () => {
   //update command permissions:
   if (client.application?.owner) await client.application?.fetch();
 
+  /*
   const commands = await client.guilds.cache.get(EvoGuildID)?.commands.fetch();
   if (commands)
     for (let command of commands) {
@@ -93,7 +94,7 @@ client.on('ready', async () => {
         })
       }
     }
-
+*/
 
   console.log("listening to " + process.env.localappdata + '\\lagrange_global_online_branch\\log.txt');
   const tail = new TailFile(process.env.localappdata + '/lagrange_global_online_branch/log.txt', { encoding: 'utf8' })
@@ -155,6 +156,14 @@ client.on("messageCreate", (message) => {
     } catch (e) {
       console.log(e)
     }
+    //Translation Bot Services:
+    //if(message.channelId == "883186801320288286"){
+     // client.channels.fetch("944073699915624539").then((c)=>{
+      //  if(c?.isText){
+       //   //c.
+       // }
+      //})
+    //}
 })
 client.on("error", (e) => {
   console.log(e)

@@ -2,23 +2,25 @@ import { Client, MessageEmbed, Role } from 'discord.js'
 import { BotSql } from '../botSql';
 import { RoleManagement } from '../RoleManagement/roleManager';
 import { TranslationServiceClient } from '@google-cloud/translate';
+import * as http from 'http'
 //@ts-ignore
 import * as  CLD from 'cld'
 
 export class Parser {
 
     EvoPublic = '938866102837067827';
-    AlliancePublic = `939399514727514112`;
+    //AlliancePublic = `939399514727514112`;
     VoidUnion = `938935253924479067`;
     Sql: BotSql;
     Roles: RoleManagement
     Translate: TranslationServiceClient
-
+    LastRead:Date;
 
     constructor(sql: BotSql, roles: RoleManagement) {
         this.Sql = sql;
         this.Roles = roles;
         this.Translate = new TranslationServiceClient({ projectId: "struocks", keyFilename: "gcpkey.json" });
+        this.LastRead = new Date(0);
     }
 
     public parseLineToDiscord(line: string, client: Client) {
@@ -26,14 +28,14 @@ export class Parser {
         if (line.match(/Call script game\.on_exit\(\)/)) {
             client.channels.fetch(this.EvoPublic).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has closed*") })
             client.channels.fetch(this.VoidUnion).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has closed*") })
-            client.channels.fetch(this.AlliancePublic).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has closed*") })
+            //client.channels.fetch(this.AlliancePublic).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has closed*") })
             console.log("*Kuriosly's game has closed*")
         }
 
         if (line.match(/\[Scene Manager\] Destroy current scene SCENE_LOGIN\./)) {
             client.channels.fetch(this.EvoPublic).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has started*") })
             client.channels.fetch(this.VoidUnion).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has started*") })
-            client.channels.fetch(this.AlliancePublic).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has closed*") })
+            //client.channels.fetch(this.AlliancePublic).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has closed*") })
             console.log("*Kuriosly's game has started*")
         }
 
@@ -47,7 +49,7 @@ export class Parser {
                         console.log(j)
                         let tchannel = []
                         if (j[1][1] == 1) {
-                            tchannel = [this.AlliancePublic, this.EvoPublic];
+                            tchannel = [ this.EvoPublic];
                         } else if (j[1][1] == 3) {
                             tchannel = [this.VoidUnion];
                         } else {
@@ -62,6 +64,23 @@ export class Parser {
                             this.parseShipMessage(j, client, tchannel)
                         } else if (j[1] && j[1][2] == 9) {
                             this.parseCityMessage(j, client)
+                        }
+                    }
+                    if(j[0] == 26){ //send to remote. I think its a union diplo screen.
+                                //only once every 5 minutes....
+                        try {
+                            if ((new Date().getTime() - this.LastRead.getTime()) > 300000) {
+                                console.log("transfering union prosp data");
+                                this.LastRead = new Date();
+                                const options = { hostname:"notthedomainyourlookingfor.com", port:80, path: "/write", method: "POST"}
+                                //const options = { hostname: "192.168.1.69", port: 9898, path: "/write", method: "POST" };
+                                const request = http.request(options, (response) => { console.log(response); });
+                                request.write(JSON.stringify(j));
+                                request.end();
+                                console.log("finished");
+                            }
+                        }catch (e){
+                            console.log(e)
                         }
                     }
                 }
@@ -102,7 +121,7 @@ export class Parser {
                 .setTitle(`**${j[1][10][0]}** has occupied **${j[1][10][1]}**'s lvl${j[1][10][3]} city ${j[1][10][2]}'`)
             client.channels.fetch(this.EvoPublic).then((channel) => { if (channel && channel.isText()) channel.send({ "embeds": [embed] }) })
             client.channels.fetch(this.VoidUnion).then((channel) => { if (channel && channel.isText()) channel.send({ "embeds": [embed] }) })
-            client.channels.fetch(this.AlliancePublic).then((channel) => { if (channel && channel.isText()) channel.send({ "embeds": [embed] }) })
+            //client.channels.fetch(this.AlliancePublic).then((channel) => { if (channel && channel.isText()) channel.send({ "embeds": [embed] }) })
             console.log(embed);
         }
     }
