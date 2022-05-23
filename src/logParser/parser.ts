@@ -14,7 +14,8 @@ export class Parser {
     Sql: BotSql;
     Roles: RoleManagement
     Translate: TranslationServiceClient
-    LastRead:Date;
+    LastRead: Date;
+    messageClass = 0;
 
     constructor(sql: BotSql, roles: RoleManagement) {
         this.Sql = sql;
@@ -38,18 +39,40 @@ export class Parser {
             //client.channels.fetch(this.AlliancePublic).then((channel) => { if (channel && channel.isText()) channel.send("*Kuriosly's game has closed*") })
             console.log("*Kuriosly's game has started*")
         }
-
+        //set message class (if its that line)
+        const messageClassRegex = /Msg Receive: cmd_id:\[(\d+)\]/;
+        const match = messageClassRegex.exec(line)
+        if (match) {
+            this.messageClass = Number.parseInt(match[1])
+            console.log(this.messageClass)
+        }
         //console.log("input:" + line)
         let payload = (line.substring(26));
         try {
             if (payload.charAt(0) == '[') {
                 let j = JSON.parse(payload)
                 if (j) {
-                    if (j[1] && typeof (j[1]) == 'object' && j[1][2] < 14 && typeof (j[1][3]) == 'number') {
+                    if (this.messageClass == 502 && j[0] > 26) { //send to remote. I think its a union diplo screen.
+                        //only once every 5 minutes....
+                        try {
+                            if ((new Date().getTime() - this.LastRead.getTime()) > 300000) {
+                                console.log("transfering union prosp data");
+                                this.LastRead = new Date();
+                                const options = { hostname: "notthedomainyourlookingfor.com", port: 80, path: "/write", method: "POST" }
+                                //const options = { hostname: "192.168.1.69", port: 9898, path: "/write", method: "POST" };
+                                const request = http.request(options, (response) => { console.log(response); });
+                                request.write(JSON.stringify(j));
+                                request.end();
+                                console.log("finished");
+                            }
+                        } catch (e) {
+                            console.log(e)
+                        }
+                    }else if (j[1] && typeof (j[1]) == 'object' && j[1][2] < 14 && typeof (j[1][3]) == 'number') {
                         console.log(j)
                         let tchannel = []
                         if (j[1][1] == 1) {
-                            tchannel = [ this.EvoPublic];
+                            tchannel = [this.EvoPublic];
                         } else if (j[1][1] == 3) {
                             tchannel = [this.VoidUnion];
                         } else {
@@ -72,23 +95,6 @@ export class Parser {
                             this.parseCustomEmojiMessage(j, client, tchannel)
                         }
                     }
-                    if(j[0] == 26){ //send to remote. I think its a union diplo screen.
-                                //only once every 5 minutes....
-                        try {
-                            if ((new Date().getTime() - this.LastRead.getTime()) > 300000) {
-                                console.log("transfering union prosp data");
-                                this.LastRead = new Date();
-                                const options = { hostname:"notthedomainyourlookingfor.com", port:80, path: "/write", method: "POST"}
-                                //const options = { hostname: "192.168.1.69", port: 9898, path: "/write", method: "POST" };
-                                const request = http.request(options, (response) => { console.log(response); });
-                                request.write(JSON.stringify(j));
-                                request.end();
-                                console.log("finished");
-                            }
-                        }catch (e){
-                            console.log(e)
-                        }
-                    }
                 }
             }
         } catch (e) {
@@ -96,22 +102,22 @@ export class Parser {
         }
     }
 
-    parseCustomEmojiMessage(j: any, client:Client, channels: string[]){
-       //Example
-       // [21:17:47.911] M [SCRIPT] [198405,[1653279467,3,13,100137,1602,"Kuriosly",100137,"Void Autocracy",2,1,"6280692370d9a90adcc16736rPQ0xYpD02,494,242,0",[],30022,[5,7,3,104],0]]
-        if(typeof(j[1][10]) == 'string'){
+    parseCustomEmojiMessage(j: any, client: Client, channels: string[]) {
+        //Example
+        // [21:17:47.911] M [SCRIPT] [198405,[1653279467,3,13,100137,1602,"Kuriosly",100137,"Void Autocracy",2,1,"6280692370d9a90adcc16736rPQ0xYpD02,494,242,0",[],30022,[5,7,3,104],0]]
+        if (typeof (j[1][10]) == 'string') {
             let image = j[1][10].split(',')
             const embed = new MessageEmbed()
-            .setDescription(`[*${j[1][7]}*] **${j[1][5]}** `)
-            .setImage(`https://lagrange.fp.ps.easebar.com/file/${image[0]}`)
+                .setDescription(`[*${j[1][7]}*] **${j[1][5]}** `)
+                .setImage(`https://lagrange.fp.ps.easebar.com/file/${image[0]}`)
             console.log(`[*${j[1][7]}*] **${j[1][5]}** ` + `https://lagrange.fp.ps.easebar.com/file/${image[0]}`)
             for (let tchannel of channels) {
-                client.channels.fetch(tchannel).then((channel)=> {if (channel && channel.isText()) channel.send({embeds: [embed]})})
+                client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send({ embeds: [embed] }) })
             }
         }
     }
 
-    parseReenforcementRequests(j: any, client:Client, channels:string[]){ //type 6
+    parseReenforcementRequests(j: any, client: Client, channels: string[]) { //type 6
 
         //[22:28:32.800] M [SCRIPT] [199662,[1653283712,3,6,100137,1539,"Buscat",100137,"Void Autocracy",0,0,["Meow",785307],null,30022,[23,3,14,101],0]]
         if (typeof (j[1][10][0] == 'string')) {
@@ -124,33 +130,33 @@ export class Parser {
         }
     }
 
-    parseReenforcementsRecieved(j:any, client:Client, channels:string[]){ //type 7
+    parseReenforcementsRecieved(j: any, client: Client, channels: string[]) { //type 7
         //[22:33:39.091] M [SCRIPT] [199734,[1653284019,3,7,100137,2699,"MAXimi11ian",100137,"Void Autocracy",0,0,["MAXimi11ian","Buscat",[5,5]],null,30022,[1,3,8,101],0]]
         //[22:40:39.036] M [SCRIPT] [199822,[1653284439,3,7,100137,1368,"Storm Dervish",100137,"Void Autocracy",0,0,["Storm Dervish","Kuriosly",[3,1,4,2]],null,30022,[3,7,17,105],0]]
-            //3: frigate
-            //4: destroyer
-            //5: cruiser
-            let send = ""
-            send += `*${j[1][10][1]} recieved reenforcements from* ${j[1][10][0]}: `//: * ${j[1][10][3]}(${j[1][10][4]}FP) vs ${j[1][10][5]}(${j[1][10][6]}FP)`
-            for(let i = 0; i<j[1][10][2].length; i+=2){
-                switch(j[1][10][2][i]){
-                    case 3:
-                        send += `Frigate\\*${j[1][10][2][i+1]}`; break;
-                    case 4:
-                        send += `Destroyer\\*${j[1][10][2][i+1]}`; break;
-                    case 5:
-                        send += `Cruiser\\*${j[1][10][2][i+1]}`; break;
-                    case 6:
-                        send += `Battlecruiser\\*${j[1][10][2][i+1]}`; break;
-                    case 7:
-                        send += `Carrier\\*${j[1][10][2][i+1]}`; break;
-                }
-                if((i+1)<j[1][10][2].length) send +=", "
+        //3: frigate
+        //4: destroyer
+        //5: cruiser
+        let send = ""
+        send += `*${j[1][10][1]} recieved reenforcements from* ${j[1][10][0]}: `//: * ${j[1][10][3]}(${j[1][10][4]}FP) vs ${j[1][10][5]}(${j[1][10][6]}FP)`
+        for (let i = 0; i < j[1][10][2].length; i += 2) {
+            switch (j[1][10][2][i]) {
+                case 3:
+                    send += `Frigate\\*${j[1][10][2][i + 1]}`; break;
+                case 4:
+                    send += `Destroyer\\*${j[1][10][2][i + 1]}`; break;
+                case 5:
+                    send += `Cruiser\\*${j[1][10][2][i + 1]}`; break;
+                case 6:
+                    send += `Battlecruiser\\*${j[1][10][2][i + 1]}`; break;
+                case 7:
+                    send += `Carrier\\*${j[1][10][2][i + 1]}`; break;
             }
-            for (let tchannel of channels) {
-                client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send(send) })
-            }
-            console.log(send);
+            if ((i + 1) < j[1][10][2].length) send += ", "
+        }
+        for (let tchannel of channels) {
+            client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send(send) })
+        }
+        console.log(send);
 
     }
 
@@ -218,7 +224,7 @@ export class Parser {
                                 }
                                 let [gtranslate] = await this.Translate.translateText(request)
                                 //console.log(gtranslate)
-                                if (gtranslate.translations && gtranslate.translations[0].detectedLanguageCode!= "en"){
+                                if (gtranslate.translations && gtranslate.translations[0].detectedLanguageCode != "en") {
                                     translation = gtranslate.translations[0].translatedText + " | " + gtranslate.translations[0].detectedLanguageCode?.toLocaleUpperCase();
                                 }
                             }
@@ -238,10 +244,10 @@ export class Parser {
                             }
                             let [gtranslate] = await this.Translate.translateText(request)
                             //console.log(gtranslate)
-                            if (gtranslate.translations && gtranslate.translations[0].detectedLanguageCode!= "en"){
+                            if (gtranslate.translations && gtranslate.translations[0].detectedLanguageCode != "en") {
                                 translation = gtranslate.translations[0].translatedText + " | " + gtranslate.translations[0].detectedLanguageCode?.toLocaleUpperCase();
                             }
-                            } catch (e) {
+                        } catch (e) {
                             console.log(e)
                         }
                     }
@@ -280,7 +286,7 @@ export class Parser {
 
                 j[1][10] = j[1][10].replaceAll("{111}", ":kissing:")
                 j[1][10] = j[1][10].replaceAll("{133}", ":watermelon:")
-                
+
                 j[1][10] = j[1][10].replaceAll("{123}", ":ok:")
                 j[1][10] = j[1][10].replaceAll("{125}", ":cry:")
                 j[1][10] = j[1][10].replaceAll("{129}", ":cry:")
@@ -323,8 +329,8 @@ export class Parser {
                         client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send(`[*${j[1][7]}*] **${j[1][5]}** ${j[1][10]} ${translation}`) })
                     }
                     console.log(`${j[1][5]}(${j[1][7]}): ${j[1][10]}`)
-                    if(translation.length > 0)
-                    translation = `| *${translation}*`
+                    if (translation.length > 0)
+                        translation = `| *${translation}*`
                     this.Roles.verifyUser(j[1][10], { unionName: j[1][7], userId: j[1][4], userName: j[1][5] }, client);
                 }
             }

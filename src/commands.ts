@@ -4,7 +4,6 @@ const  {DateTime} = require(`luxon`)
 import { CommandInteraction, ModalSubmitInteraction} from 'discord.js';
 const { MessageActionRow, Modal, TextInputComponent } = require('discord.js');
 
-
 export class Commands {
 
     static generateSlashCommand(){
@@ -19,8 +18,8 @@ export class Commands {
             .setTitle("Timer Config");
 
         const timeInput = new TextInputComponent()
-        .setCustomId("time (HH:MM)")
-        .setLabel("Time")
+        .setCustomId("time")
+        .setLabel("Time (HH:MM)")
         .setStyle('SHORT')
         .setRequired(true)
         const textInput = new TextInputComponent()
@@ -51,15 +50,25 @@ export class Commands {
         const tz = interaction.fields.getTextInputValue('timezone');
         const notice = interaction.fields.getTextInputValue('notice');
 
-        
+        console.log(time + " " + tz)
 
-        let t = DateTime.fromISO(time + " " + tz,'H:mm Z')
-        if(t < DateTime.now()){
-            t = t.plus({days:1})
+        let t = DateTime.fromFormat(time + " " + tz,'H:mm z')
+        if(t.isValid){
+            if(t < DateTime.now()){
+                t = t.plus({days:1})
+            }
+            
+            let unixTime = t.toMillis()
+            let timerTime = t.toMillis() - DateTime.now().toMillis();
+            let args = {channel:interaction.channel,notice:notice,author:interaction.user.id};
+            setTimeout((a)=>{
+                a.channel?.send(`<@${a.author}> ${a.notice}`)
+            },timerTime,args)
+            interaction.reply(`setting a timer for ${t.toHTTP()} in <t:${unixTime}:D> |  ${notice}`);
+        }else{
+            interaction.reply({content:t.invalidReason,ephemeral:true})
         }
-        
-        let unixTime = t.toMillis() % 1000 
-        interaction.reply(`setting a timer for ${t.toHTTP()} in <t:${unixTime}:D> |  ${notice}`);
+
     }
 
 

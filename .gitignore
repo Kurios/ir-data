@@ -4,8 +4,8 @@ build
 build/*
 database.db
 logs.txt
-database.db.backup
+database.db.*
 app_secret
-bot-database.db
+bot-database.*
 bot-database.backup.db
 gcpkey.json
