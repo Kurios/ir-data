@@ -120,10 +120,10 @@ export class RoleManagement {
 
     checkTrigger(phrase:string){
         //console.log(this.triggers);
-        let index = this.triggers.findIndex((x)=>{return phrase == x.phrase});
+        let index = this.triggers.findIndex((x)=>{return phrase.toLocaleUpperCase() == x.phrase.toLocaleUpperCase()});
         if (index == -1) return undefined;
         let ret = this.triggers[index];
-        this.triggers = this.triggers.filter((x)=>{return phrase != x.phrase})
+        this.triggers = this.triggers.filter((x)=>{return phrase.toLocaleUpperCase() != x.phrase.toLocaleUpperCase()})
         return ret;
     }
 

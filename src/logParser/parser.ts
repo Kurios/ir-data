@@ -45,7 +45,7 @@ export class Parser {
             if (payload.charAt(0) == '[') {
                 let j = JSON.parse(payload)
                 if (j) {
-                    if (j[1] && typeof (j[1]) == 'object' && j[1][2] < 10 && typeof (j[1][3]) == 'number') {
+                    if (j[1] && typeof (j[1]) == 'object' && j[1][2] < 14 && typeof (j[1][3]) == 'number') {
                         console.log(j)
                         let tchannel = []
                         if (j[1][1] == 1) {
@@ -59,11 +59,17 @@ export class Parser {
                             this.parseChatMessage(j, client, tchannel)
                         } else if (j[1] && j[1][2] == 3) {
                             this.parseBattleMessage(j, client, tchannel)
-
                         } else if (j[1] && j[1][2] == 4) {
                             this.parseShipMessage(j, client, tchannel)
+                        } else if (j[1] && j[1][2] == 6) {
+                            this.parseReenforcementRequests(j, client, tchannel)
+                        } else if (j[1] && j[1][2] == 7) {
+                            this.parseReenforcementsRecieved(j, client, tchannel)
                         } else if (j[1] && j[1][2] == 9) {
                             this.parseCityMessage(j, client)
+                        } else if (j[1] && j[1][2] == 13) {
+                            //console.log(JSON.stringify(j))
+                            this.parseCustomEmojiMessage(j, client, tchannel)
                         }
                     }
                     if(j[0] == 26){ //send to remote. I think its a union diplo screen.
@@ -88,6 +94,64 @@ export class Parser {
         } catch (e) {
             //console.log(l);
         }
+    }
+
+    parseCustomEmojiMessage(j: any, client:Client, channels: string[]){
+       //Example
+       // [21:17:47.911] M [SCRIPT] [198405,[1653279467,3,13,100137,1602,"Kuriosly",100137,"Void Autocracy",2,1,"6280692370d9a90adcc16736rPQ0xYpD02,494,242,0",[],30022,[5,7,3,104],0]]
+        if(typeof(j[1][10]) == 'string'){
+            let image = j[1][10].split(',')
+            const embed = new MessageEmbed()
+            .setDescription(`[*${j[1][7]}*] **${j[1][5]}** `)
+            .setImage(`https://lagrange.fp.ps.easebar.com/file/${image[0]}`)
+            console.log(`[*${j[1][7]}*] **${j[1][5]}** ` + `https://lagrange.fp.ps.easebar.com/file/${image[0]}`)
+            for (let tchannel of channels) {
+                client.channels.fetch(tchannel).then((channel)=> {if (channel && channel.isText()) channel.send({embeds: [embed]})})
+            }
+        }
+    }
+
+    parseReenforcementRequests(j: any, client:Client, channels:string[]){ //type 6
+
+        //[22:28:32.800] M [SCRIPT] [199662,[1653283712,3,6,100137,1539,"Buscat",100137,"Void Autocracy",0,0,["Meow",785307],null,30022,[23,3,14,101],0]]
+        if (typeof (j[1][10][0] == 'string')) {
+            let send = `[*${j[1][7]}*] **${j[1][5]}**\n `
+            send += `*requested reenforcements for* ${j[1][10][0]}`//: * ${j[1][10][3]}(${j[1][10][4]}FP) vs ${j[1][10][5]}(${j[1][10][6]}FP)`
+            for (let tchannel of channels) {
+                client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send(send) })
+            }
+            console.log(send);
+        }
+    }
+
+    parseReenforcementsRecieved(j:any, client:Client, channels:string[]){ //type 7
+        //[22:33:39.091] M [SCRIPT] [199734,[1653284019,3,7,100137,2699,"MAXimi11ian",100137,"Void Autocracy",0,0,["MAXimi11ian","Buscat",[5,5]],null,30022,[1,3,8,101],0]]
+        //[22:40:39.036] M [SCRIPT] [199822,[1653284439,3,7,100137,1368,"Storm Dervish",100137,"Void Autocracy",0,0,["Storm Dervish","Kuriosly",[3,1,4,2]],null,30022,[3,7,17,105],0]]
+            //3: frigate
+            //4: destroyer
+            //5: cruiser
+            let send = ""
+            send += `*${j[1][10][1]} recieved reenforcements from* ${j[1][10][0]}: `//: * ${j[1][10][3]}(${j[1][10][4]}FP) vs ${j[1][10][5]}(${j[1][10][6]}FP)`
+            for(let i = 0; i<j[1][10][2].length; i+=2){
+                switch(j[1][10][2][i]){
+                    case 3:
+                        send += `Frigate\\*${j[1][10][2][i+1]}`; break;
+                    case 4:
+                        send += `Destroyer\\*${j[1][10][2][i+1]}`; break;
+                    case 5:
+                        send += `Cruiser\\*${j[1][10][2][i+1]}`; break;
+                    case 6:
+                        send += `Battlecruiser\\*${j[1][10][2][i+1]}`; break;
+                    case 7:
+                        send += `Carrier\\*${j[1][10][2][i+1]}`; break;
+                }
+                if((i+1)<j[1][10][2].length) send +=", "
+            }
+            for (let tchannel of channels) {
+                client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send(send) })
+            }
+            console.log(send);
+
     }
 
     parseBattleMessage(j: any, client: Client, channels: string[]) {
@@ -224,7 +288,7 @@ export class Parser {
 
                 j[1][10] = j[1][10].replaceAll("{128}", ":boxing_glove:")
                 j[1][10] = j[1][10].replaceAll("{140}", ":ghost:")
-
+                j[1][10] = j[1][10].replaceAll("#r", "\n");
 
                 //fix empty union
                 if (j[1][7].length == 0) j[1][7] = " ";

@@ -12,6 +12,7 @@ import { Routes } from 'discord-api-types/v9'
 import { SlashCommandBuilder } from '@discordjs/builders'
 import fs from 'fs';
 import { resolveSoa } from 'dns'
+import { Commands } from './commands'
 
 let lastRead = 0;
 const EvoPublic = '938866102837067827';
@@ -33,7 +34,8 @@ const commands = [
   new SlashCommandBuilder().setName("whois").setDescription("List identified users using following terms. Please select one.")
     .addSubcommand(subcommand => subcommand.setName("user").setDescription("An In Game User").addStringOption(option => option.setName("user").setDescription("The user's in game username")))
     .addSubcommand(subcommand => subcommand.setName("discord").setDescription("A Discord User").addUserOption(option => option.setName("user").setDescription("The discord user")))
-    .addSubcommand(subcommand => subcommand.setName("union").setDescription("List the users of a union").addStringOption(option => option.setName("union").setDescription("The Union you want a userlist from"))).toJSON()
+    .addSubcommand(subcommand => subcommand.setName("union").setDescription("List the users of a union").addStringOption(option => option.setName("union").setDescription("The Union you want a userlist from"))).toJSON(),
+  Commands.generateSlashCommand()
 ];
 
 const potatoCommands = [
@@ -95,7 +97,6 @@ client.on('ready', async () => {
       }
     }
 */
-
   console.log("listening to " + process.env.localappdata + '\\lagrange_global_online_branch\\log.txt');
   const tail = new TailFile(process.env.localappdata + '/lagrange_global_online_branch/log.txt', { encoding: 'utf8' })
   tail.on('tail_error', (err) => {
@@ -324,7 +325,18 @@ client.on('interactionCreate', async (interaction) => {
               console.log(e)
             }
             break;
+          case "timer":
+            Commands.timerInteraction1(interaction)
+            break;
         }
+      }if(interaction.isModalSubmit()){
+        console.log(interaction.customId);
+        switch(interaction.customId){
+          case "timerConfig":
+            Commands.timerInteraction2(interaction)
+            
+        }
+          
       }
     } catch (e) {
       console.log(e)
