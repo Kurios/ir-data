@@ -9,3 +9,4 @@ app_secret
 bot-database.*
 bot-database.backup.db
 gcpkey.json
+log.txt
