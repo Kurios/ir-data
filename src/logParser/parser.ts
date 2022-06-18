@@ -2,6 +2,8 @@ import { Client, MessageEmbed, Role } from 'discord.js'
 import { BotSql } from '../botSql';
 import { RoleManagement } from '../RoleManagement/roleManager';
 import { TranslationServiceClient } from '@google-cloud/translate';
+import { Ships } from './ships';
+import { Battle } from './battleParser';
 import * as http from 'http'
 //@ts-ignore
 import * as  CLD from 'cld'
@@ -137,6 +139,8 @@ export class Parser {
                                     this.parseBattleMessage(j, client, tchannel)
                                 } else if (j[1] && j[1][2] == 4) {
                                     this.parseShipMessage(j, client, tchannel)
+                                } else if (j[1] && j[1][2] == 5) {
+                                    this.parseScoringMessage(j, client, tchannel)
                                 } else if (j[1] && j[1][2] == 6) {
                                     this.parseReenforcementRequests(j, client, tchannel)
                                 } else if (j[1] && j[1][2] == 7) {
@@ -194,6 +198,19 @@ export class Parser {
         }
     }
 
+    parseScoringMessage(j:any, client:Client, channels: string[]) {
+        //[658429,[1655510037,3,5,100137,0,"",100137,"Void Autocracy",0,0,[100137,100137,1655510037,13,"{@#}[\"Starblazers\",5]"],null,30022,[0,0,0,0],0,""],[],0]
+        let scoreline = /(\[.+\])/.exec(j[1][10][4])
+        if(scoreline && scoreline[1]){
+            let parsed = JSON.parse(scoreline[1])
+            let send = `[*${j[1][7]}*] **${parsed[0]}**\n *scored ${parsed[1]} points`
+            for (let tchannel of channels) {
+                client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send(send).then((msg) => { this.MessageIdLog.set(j[0], msg.id) }) })
+            }
+            console.log(send);
+        }
+    }
+    
     parseReenforcementsRecieved(j: any, client: Client, channels: string[]) { //type 7
         //[22:33:39.091] M [SCRIPT] [199734,[1653284019,3,7,100137,2699,"MAXimi11ian",100137,"Void Autocracy",0,0,["MAXimi11ian","Buscat",[5,5]],null,30022,[1,3,8,101],0]]
         //[22:40:39.036] M [SCRIPT] [199822,[1653284439,3,7,100137,1368,"Storm Dervish",100137,"Void Autocracy",0,0,["Storm Dervish","Kuriosly",[3,1,4,2]],null,30022,[3,7,17,105],0]]
@@ -213,6 +230,8 @@ export class Parser {
                 case 6:
                     send += `Battlecruiser\\*${j[1][10][2][i + 1]}`; break;
                 case 7:
+                    send += `Unknowns\\*${j[1][10][2][i + 1]}`; break;
+                case 8:
                     send += `Carrier\\*${j[1][10][2][i + 1]}`; break;
             }
             if ((i + 1) < j[1][10][2].length) send += ", "
@@ -226,18 +245,30 @@ export class Parser {
 
     parseBattleMessage(j: any, client: Client, channels: string[]) {
         if (j[1][7].length == 0) j[1][7] = " ";
-        let send = `[*${j[1][7]}*] **${j[1][5]}**\n `
-        send += `*shared a battle*`//: * ${j[1][10][3]}(${j[1][10][4]}FP) vs ${j[1][10][5]}(${j[1][10][6]}FP)`
+        //let send = `[*${j[1][7]}*] **${j[1][5]}**\n `
+        //send += `*shared a battle*`//: * ${j[1][10][3]}(${j[1][10][4]}FP) vs ${j[1][10][5]}(${j[1][10][6]}FP)`
+        //[658560,[1655511335,3,3,100137,1602,"Kuriosly",100137,"Void Autocracy",1,1,[750257,"John Miller",1,"Hi",78,"{[B_SP_]}cfg_world_item#name#6{[E_SP_]}",300,0,6,0,1,19,3178,19,"",1,1602],[],30022,[5,7,3,104],0,""],[],0]
+        //let attacker = 
+        let send = {embeds: [Battle.makeEmbed(`[*${j[1][7]}*] **${j[1][5]}**`,j[1][10])]}
         for (let tchannel of channels) {
             client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send(send).then((msg) => { this.MessageIdLog.set(j[0], msg.id) }) })
         }
         console.log(send);
     }
 
+    //[658355,
+    //[1655509337,3,4,100137,1602,"Kuriosly",100137,"Void Autocracy",1,1,
+    //[37,"5030104,1,2201,4,2,2202,4;5030105,4,1203,5,6,1301,5,3,1209,5,5,1205,5;5030103,1,103,1,5,204,1,4,203,1,3,305,1;5030102,5,201,1,3,301,1,4,302,1,2,102,1;5030101,8,404,5,1,107,5,4,304,5,3,303,2;",
+    //"101,15031;202,15032;303,15033;404,55031;505,39993;506,39005;607,59982;608,59985;709,65031;810,79993;",50301,"5030108,5030104,5030105,5030106,5030107,5030101,5030102,5030103",0,"101,15;303,8;",105002,"184,2,",0,0,0,""],
+    //[],30022,[5,7,3,104],0,"Oh GOD NEW FEATURES"],[],0]
+
     parseShipMessage(j: any, client: Client, channels: string[]) {
         if (typeof (j[1][10][1]) == 'string' && typeof (j[1][10][2] == 'string')) {
             let send = `[*${j[1][7]}*] **${j[1][5]}**\n `
-            send += `*shared a ship*`
+            send += `*shared a ${Ships.localizeShip(j[1][10][0])}*`
+            if(j[1][15].length > 0){
+                send += " : " + j[1][15]
+            }
             for (let tchannel of channels) {
                 client.channels.fetch(tchannel).then((channel) => { if (channel && channel.isText()) channel.send(send).then((msg) => { this.MessageIdLog.set(j[0], msg.id) }) })
             }
